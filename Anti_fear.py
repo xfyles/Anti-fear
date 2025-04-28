@@ -9,13 +9,22 @@ import termios
 import tty
 from sys import platform
 
+# Временные задержки для вибрации
+VIBE_SHORT = 100  # короткая вибрация (в миллисекундах)
+VIBE_LONG = 500   # длинная вибрация (в миллисекундах)
+
+# Цвета для вывода в терминал
+RESET = "\033[0m"
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+RED = "\033[31m"
+MAGENTA = "\033[35m"
+CYAN = "\033[36m"
+BLUE = "\033[34m"
+
 # Пути и файлы
 LOG_FILE = "logs/activity_log.csv"
 MUSIC_FILE = "/data/data/com.termux/files/home/Anti_fear.mp3"
-
-# Вибрация
-VIBE_SHORT = 100
-VIBE_LONG = 300
 
 music_process = None
 
@@ -27,7 +36,7 @@ def play_music():
         music_process.daemon = True
         music_process.start()
     else:
-        print("Файл музыки не найден или mpv не установлен.")
+        print(f"{RED}Файл музыки не найден или mpv не установлен.{RESET}")
 
 def stop_music():
     os.system("pkill mpv")
@@ -63,13 +72,13 @@ def send_notification(title, message, vibe=False):
         os.system(f"termux-notification -t '{title}' -c '{message}' --sound")
     if vibe:
         vibrate(VIBE_LONG)
-    print(f"\n[{time.strftime('%H:%M:%S')}] {title}: {message}")
+    print(f"\n{CYAN}[{time.strftime('%H:%M:%S')}] {title}: {message}{RESET}")
 
 def speak(text):
     if platform == "linux" and os.path.exists("/data/data/com.termux/files/usr/bin/termux-tts-speak"):
         os.system(f"termux-tts-speak '{text}' &")
     else:
-        print("Установите termux-api для синтеза речи!")
+        print(f"{RED}Установите termux-api для синтеза речи!{RESET}")
 
 def get_key():
     fd = sys.stdin.fileno()
@@ -93,6 +102,7 @@ def wait_for_enter():
         termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
 # ====== Основные модули ======
+
 def show_welcome():
     ascii_art = r"""
    ___ _       _
@@ -104,12 +114,12 @@ def show_welcome():
     title = "Анти-Тревога v3.5".center(45)
     subtitle = "Цифровой помощник для ментального здоровья".center(45)
 
-    # Приветственная надпись
-    print(ascii_art)
-    print(border)
-    print(title)
-    print(subtitle)
-    print(border)
+    # Приветственная надпись в зелёном цвете
+    print(GREEN + ascii_art + RESET)
+    print(YELLOW + border + RESET)
+    print(GREEN + title + RESET)
+    print(MAGENTA + subtitle + RESET)
+    print(YELLOW + border + RESET)
 
     time.sleep(1)
     vibrate_pattern(3, 100)
@@ -131,22 +141,22 @@ def breathing_animation(cycles=3):
     for _ in range(cycles):
         for r in radius_steps:
             print("\033c", end='')
-            print("\nВдох...")
+            print(GREEN + "\nВдох...".center(35) + RESET)
             draw_circle(r)
             time.sleep(0.3)
         print("\033c", end='')
-        print("\nЗадержка дыхания...")
+        print(YELLOW + "\nЗадержка дыхания...".center(35) + RESET)
         draw_circle(radius_steps[-1])
         time.sleep(2)
         for r in reversed(radius_steps):
             print("\033c", end='')
-            print("\nВыдох...")
+            print(MAGENTA + "\nВыдох...".center(35) + RESET)
             draw_circle(r)
             time.sleep(0.3)
         time.sleep(1)
 
 def breathing_exercise():
-    print("\n=== Техника медленного дыхания ===")
+    print(f"{CYAN}\n=== Техника медленного дыхания ==={RESET}")
     vibrate(VIBE_SHORT)
     send_notification("Дыхание", "Начинаем упражнение...", True)
     log_activity("Дыхание")
@@ -173,7 +183,7 @@ def affirmations():
         ]
     }
 
-    print("\n=== Аффирмации ===")
+    print(f"{CYAN}\n=== Аффирмации ==={RESET}")
     vibrate(VIBE_SHORT)
     log_activity("Аффирмации")
 
@@ -181,8 +191,8 @@ def affirmations():
     random.shuffle(all_quotes)
 
     for idx, (category, quote) in enumerate(all_quotes, 1):
-        print(f"\n{category}:")
-        print(f"→ {quote}")
+        print(f"{YELLOW}\n{category}:{RESET}")
+        print(f"{GREEN}→ {quote}{RESET}")
         speak(quote)
         send_notification(category, quote, True)
         print(f"\nНажмите [Enter], чтобы перейти к следующей аффирмации... (Аффирмация {idx} из {len(all_quotes)})")
@@ -197,14 +207,14 @@ def wisdom():
         ("Ницше", "То, что не убивает нас, делает сильнее")
     ]
 
-    print("\n=== Мудрость веков ===")
+    print(f"{CYAN}\n=== Мудрость веков ==={RESET}")
     vibrate(VIBE_SHORT)
     log_activity("Мудрые мысли")
     random.shuffle(quotes)
 
     for idx, (author, quote) in enumerate(quotes, 1):
-        print(f"\n{author}:")
-        print(f"«{quote}»")
+        print(f"{MAGENTA}\n{author}:{RESET}")
+        print(f"{BLUE}«{quote}»{RESET}")
         send_notification(author, quote, True)
         print(f"\nНажмите [Enter], чтобы перейти к следующей цитате... ({idx} из {len(quotes)})")
         wait_for_enter()
@@ -212,40 +222,40 @@ def wisdom():
     feedback()
 
 def feedback():
-    print("\nОцените своё самочувствие по шкале от 1 до 5:")
+    print(f"\n{CYAN}Оцените своё самочувствие по шкале от 1 до 5:{RESET}")
     print("1 - Очень плохо, 5 - Отлично")
     try:
         choice = input("\nВаш выбор: ")
         score = int(choice)
         if 1 <= score <= 5:
             comment = input("Краткий комментарий (опционально): ")
-            log_activity(f"Оценка: {score}/5 - {comment}")
-            print("Спасибо за вашу обратную связь!")
+            log_activity(f"Оценка самочувствия: {score} - {comment}")
+            print(f"{GREEN}Спасибо за вашу обратную связь!{RESET}")
         else:
-            print("Введите число от 1 до 5!")
+            print(f"{RED}Введите число от 1 до 5!{RESET}")
     except ValueError:
-        print("Ошибка ввода!")
+        print(f"{RED}Ошибка ввода!{RESET}")
 
 def print_menu():
     border = "═"*35
     menu_title = " Выберите действие:".center(35)
 
-    print(f"\n{border}")
-    print(f"{menu_title}")
-    print(f"{border}")
+    print(f"{YELLOW}\n{border}{RESET}")
+    print(f"{CYAN}{menu_title}{RESET}")
+    print(f"{YELLOW}{border}{RESET}")
 
     options = [
-        ("1. Техника дыхания", ""),
-        ("2. Аффирмации", ""),
-        ("3. Мудрые мысли", ""),
-        ("4. Экстренная помощь", ""),
-        ("5. Выход", "")
+        ("1. Техника дыхания", GREEN),
+        ("2. Аффирмации", MAGENTA),
+        ("3. Мудрые мысли", BLUE),
+        ("4. Экстренная помощь", CYAN),
+        ("5. Выход", RED)
     ]
 
-    for text, _ in options:
-        print(f" {text}")
+    for text, color in options:
+        print(f"{color} {text}{RESET}")
 
-    print(f"{border}")
+    print(f"{YELLOW}{border}{RESET}")
 
 # ====== Главная программа ======
 def main():
@@ -271,14 +281,14 @@ def main():
             stop_music()
             exit()
         else:
-            print("Используйте клавиши 1-5")
+            print(f"{RED}Используйте клавиши 1-5{RESET}")
             vibrate_pattern(2, 500)
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Завершение работы...")
+        print(f"\n{RED}Завершение работы...{RESET}")
         stop_music()
         vibrate(VIBE_SHORT)
         exit()
